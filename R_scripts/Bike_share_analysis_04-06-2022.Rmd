@@ -1,0 +1,27 @@
+---
+title: 'Case Study: How does Bike-Share Navigate Speedy Success?'
+author: "Karthik Bhaktha"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+`attach company logo`
+
+## Business Task: How do annual members and casual riders use Cyclistic bike differently?
+
+**Scope of this analysis:**
+
+To find patterns and trends in the data which could provide meaningful insight to the marketing team which could help them launch a campaign to convert casual riders to become annual members.
+
+-   Casual riders: Customers who purchase *daily-pass* or *single-ride*.
+-   Annual members: Customers who pay to use the service annually.
+
+### Data:
+
+**Source:** Publicly made available by Motivate International Inc. [here](https://divvy-tripdata.s3.amazonaws.com/index.html) under this [license](https://www.divvybikes.com/data-license-agreement) .
+
+**Organization:** There are 12 datasets in csv format. Each dataset represents one month of data from 03/2021 to 03/2022.
+
+**Stored:** Downloaded and stored and locally securely in my password protected computer.
+
+**Integrity:**
