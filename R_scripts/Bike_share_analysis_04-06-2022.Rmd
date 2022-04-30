@@ -11,17 +11,141 @@ output: html_document
 
 **Scope of this analysis:**
 
-To find patterns and trends in the data which could provide meaningful insight to the marketing team which could help them launch a campaign to convert casual riders to become annual members.
+To find patterns and trends in the data which could provide meaningful insight to the marketing. The insights gained from this analysis will be used by the marketing team to design a campaign that could target casual members to become annual members.
 
 -   Casual riders: Customers who purchase *daily-pass* or *single-ride*.
 -   Annual members: Customers who pay to use the service annually.
 
 ### Data:
 
-**Source:** Publicly made available by Motivate International Inc. [here](https://divvy-tripdata.s3.amazonaws.com/index.html) under this [license](https://www.divvybikes.com/data-license-agreement) .
+**Source:** Publicly made available by Motivate International Inc. [here](https://divvy-tripdata.s3.amazonaws.com/index.html), under [license](https://www.divvybikes.com/data-license-agreement).
 
-**Organization:** There are 12 datasets in csv format. Each dataset represents one month of data from 03/2021 to 03/2022.
+**Organization:** There are 12 data sets in csv format. Each data set represents one month of data from 03/2021 to 03/2022.
 
-**Stored:** Downloaded and stored and locally securely in my password protected computer.
+We merged the 13 data sets into a single dataframe using python. The data cleaning and modelling was performed in VScode Jupyter notebook.
 
-**Integrity:**
+In this R-notebook, we dive into the analysis while performing modelling the data as we go.
+
+Loading all dependencies:
+
+```{r Loading Dependencies, include=FALSE}
+# loading dependicies required for the analysis
+library(tidyverse)
+library(skimr)
+library(janitor)
+library(ggplot2)
+require(scales)
+```
+
+After loading the dependencies we load the data on to a dataframe called `master_data`.
+
+This is the data that has already been cleaned using python and stored the cleaned data as a csv file. Using `glimpse()` function to get an insight of the dataframe we just imported.
+
+```{r Loading master_data}
+#using read.csv to read the csv file and storing it in vector named master_data
+master_data <- read.csv("/Users/locco/Desktop/Google_Analytics_Course/Case_Studies/Bike_share_Data/merged_csv.csv")
+
+#glimpse of the dataset
+glimpse(master_data)
+
+#glimpse() provides a horizontal view of the dataframe. Beginning with the Number of rows and columns, followed by column name trailing '$' symbol, <data_type> and data....... 
+```
+
+There are 14 variables/columns (as seen above). For this analysis we will be working with mainly ride_id, started_at, rideable_type, member_casual,total_seconds, distance_miles.
+
+Filtering and renaming couple of columns and storing it into a new vector trimmed_df
+
+```{r Filtering and renaming columns}
+trimmed_df <- master_data %>%
+  select(ride_id, started_at, rideable_type, member_casual,total_seconds, distance_miles) %>%
+  rename(ride_duration_seconds = total_seconds) %>% 
+  rename(ride_distance_miles = distance_miles) 
+
+# checking if the desired funtions above were performed
+glimpse(trimmed_df)
+
+#typecasting ride_distance_miles from type 'dbl' to 'int'
+trimmed_df$ride_distance_miles <- as.integer(trimmed_df$ride_distance_miles)
+
+#Checking if the typecasting was performed succefully
+is_integer(trimmed_df$ride_distance_miles)
+head(trimmed_df)
+```
+Since we need to know how the annual members and casual members use the service by week and month. We create two new columns 'weekday' and 'month'. `(note: probably add year ??)`.
+
+The 'started_at' column contains the date and time the ride began, it is of the data type 'str', we need to first typecast as 'Date' type and extract the day of the month. 
+
+```{r Creating weekday and month columns}
+# creating column weekday - "%A" provides the un-abbreviated day name, eg: "Monday"
+trimmed_df$weekday <- format(as.Date(trimmed_df$started_at), "%A")
+
+# creating column month - "%B" provide the un-abbreviated month name, eg: "May" 
+trimmed_df$month <- format(as.Date(trimmed_df$started_at), "%B")
+
+glimpse(trimmed_df)
+```
+Now that we have cleaned the data further at a more granular level, we can start playing around with the data and explore it, gain some insight and find some patterns. 
+
+```{r}
+# We want to see number of people who ride each day and compare the difference between members and casual riders
+
+trimmed_df$weekday <- factor(trimmed_df$weekday,levels = c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))
+
+annual_vs_member_days_plot <- ggplot(data = trimmed_df) + 
+  geom_bar(mapping = aes(x = weekday,color = member_casual, fill = member_casual)) + 
+  facet_grid(~member_casual) + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5)) 
+
+annual_vs_member_days_plot + scale_y_continuous(labels = comma)
+```
+
+
+
+```{r}
+# Checking how the ridership differs by month 
+trimmed_df$month <- factor(trimmed_df$month,levels = c("January" ,"February" ,"March" , "April" ,"May" ,"June" ,"July" ,"August" ,"September" ,"October" ,"November" ,"December"))
+
+annual_vs_member_months_plot <- ggplot(data = trimmed_df) + 
+  geom_bar(mapping = aes(x = month, color = member_casual, fill = member_casual)) + 
+  facet_grid(~member_casual) + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5)) 
+
+annual_vs_member_months_plot + scale_y_continuous(labels = comma)
+```
+
+```{r}
+trimmed_df <- trimmed_df %>% 
+  mutate(ride_duration_min = as.integer(ride_duration_seconds / 60))
+glimpse(trimmed_df)
+```
+
+```{r}
+#creating summary dataframe: grouping member_casual and weekday
+mean_time_distance_summary_df <- trimmed_df %>% 
+  group_by(member_casual, weekday) %>% 
+  summarise(number_of_rides = n(),
+            average_duration_sec = mean(ride_duration_seconds),
+            average_duration_min = mean(ride_duration_min),
+            average_distance_miles = mean(ride_distance_miles)) %>% 
+  arrange(member_casual,weekday)
+
+View(mean_time_distance_summary_df)
+  
+```
+
+```{r}
+# Viz to compare average ride length between members and casual riders by week
+summary_df %>% 
+  ggplot(aes(x = weekday, y = number_of_rides, color = member_casual, fill = member_casual)) +
+  geom_col(position =  "dodge") + scale_y_continuous(labels = comma)
+
+```
+```{r}
+summary_df %>% 
+  ggplot(aes(number_of_rides, color = member_casual, fill = member_casual)) + geom_freqpoly() + scale_x_continuous(labels = comma)
+```
+
+
+```{r}
+summarized_df %>% 
+  ggplot(aes(x = weekday, y = average_duration_min, fill = member_casual)) +
+  geom_col(position = "dodge") + scale_y_continuous(labels = comma)
+```
