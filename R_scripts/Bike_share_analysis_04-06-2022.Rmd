@@ -20,11 +20,11 @@ To find patterns and trends in the data which could provide meaningful insight t
 
 **Source:** Publicly made available by Motivate International Inc. [here](https://divvy-tripdata.s3.amazonaws.com/index.html), under [license](https://www.divvybikes.com/data-license-agreement).
 
-**Organization:** There are 12 data sets in csv format. Each data set represents one month of data from 03/2021 to 03/2022.
+**Organization:** There are 12 data sets in csv format. Each data set represents one month of data from 01/2021 to 12/2021.
 
-We merged the 13 data sets into a single dataframe using python. The data cleaning and modelling was performed in VScode Jupyter notebook.
+We merged the 12 data sets into a single dataframe using python. The data cleaning and modelling was performed in VScode Jupyter notebook using python.
 
-In this R-notebook, we dive into the analysis while performing modelling the data as we go.
+In this R-notebook, we will analyse the data to find trends and patterns.
 
 Loading all dependencies:
 
@@ -37,6 +37,9 @@ library(ggplot2)
 library(lubridate) 
 require(scales)
 library(ggridges)
+library(treemap)
+library(hrbrthemes)
+library(data.table)
   
 ```
 
@@ -46,7 +49,7 @@ This is the data that has already been cleaned using python and stored the clean
 
 ```{r Loading master_data}
 #using read.csv to read the csv file and storing it in vector named master_data
-master_data <- read.csv("/Users/locco/Desktop/Google_Analytics_Course/Case_Studies/Bike_share_Data/merged_csv.csv")
+master_data <- fread("/Users/locco/Desktop/Google_Analytics_Course/Case_Studies/Bike_share_Data/merged_data.csv")
 
 #glimpse of the dataset
 glimpse(master_data)
@@ -54,149 +57,106 @@ glimpse(master_data)
 #glimpse() provides a horizontal view of the dataframe. Beginning with the Number of rows and columns, followed by column name trailing '$' symbol, <data_type> and data....... 
 ```
 
-There are 14 variables/columns (as seen above). For this analysis we will be working with mainly ride_id, started_at, rideable_type, member_casual,total_seconds, distance_miles.
+There are 14 variables/columns (as seen above). For this analysis we will be working with mainly ride_id, started_at, rideable_type, membership_type,total_seconds, distance_miles.
 
-Filtering and renaming couple of columns and storing it into a new vector trimmed_df
+Filtering out columns that we wont be using for analysis and storing it into a new vector called `trimmed_df`
 
 ```{r Filtering and renaming columns}
 trimmed_df <- master_data %>%
-  select(ride_id, started_at, rideable_type, member_casual,total_seconds, distance_miles) %>%
-  rename(ride_duration_seconds = total_seconds) %>% 
-  rename(ride_distance_miles = distance_miles) %>% 
-  rename(bike_type = rideable_type)
+  select(ride_id, started_at, bike_type, membership_type,duration_seconds, duration_minutes, distance_miles)
 
 # checking if the desired funtions above were performed
 glimpse(trimmed_df)
 ```
 
+Now that we have chosen the data we want, we can play around with the data and explore it, gain some insights and find some patterns.
+
+Performing descriptive analytics by comparing annual and casual members based on the following questions:
+
+- Compare number of rides by year. (Summary and Viz)
+- Compare number of rides by month. (Summary and Viz)
+- Compare number of rides by weekday. (Summary and Viz)
+- Compare average minutes by year. (Summary and Viz)
+- Compare average minutes by months. (Summary and Viz)
+- Compare average minutes by weekday. (Summary and Viz)
+- Compare types of bikes used by each members. (decide viz)
+- ( `Type of ride by week and month ?`)
+
+Lets answer the question as they appear in the list.
+
 ```{r}
-#typecasting ride_distance_miles from type 'dbl' to 'int'
-trimmed_df$ride_distance_miles <- as.integer(trimmed_df$ride_distance_miles)
+#number of riders by year summary
 
-#adding a ride_duration_min column
-trimmed_df <- trimmed_df %>% 
-  mutate(ride_duration_min = as.integer(ride_duration_seconds / 60))
-
-#Checking if the typecasting was performed successfully
-is_integer(trimmed_df$ride_distance_miles)
-head(trimmed_df)
+summary_df <- trimmed_df %>% 
+  mutate(month = lubridate::month(started_at, abbr= FALSE, label= TRUE)) %>% 
+  mutate(weekday = lubridate::wday(started_at, abbr = FALSE, label = TRUE)) %>% 
+  group_by(membership_type, month, weekday) %>% 
+  summarise(number_of_rides = n(),average_minutes = mean(duration_minutes))
+  
+View(summary_df)
 ```
 
-Now that we have cleaned the data further at a more granular level, we can play around with the data and explore it, gain some insights and find some patterns.
-
-Performing descriptive analytics by Comparing annual and casual members based on the following criteria :
-
--   Number of rides by weekdays
--   Number of rides by month
--   Average time in min by weekdays
--   Average time in min y month
--   Type of bike used
--   (- `Type of ride by week and month ?`)
 
 ```{r}
-#creating summary dataframe: grouping member_casual and weekday
-summary_df <- trimmed_df %>% 
-  mutate(weekday = wday(started_at, label = TRUE)) %>% 
-  group_by(member_casual, weekday) %>% 
-  summarise(number_of_rides = n(),
-            average_duration_sec = mean(ride_duration_seconds),
-            average_duration_min = mean(ride_duration_min),
-            average_distance_miles = mean(ride_distance_miles)) %>% 
-  arrange(member_casual,weekday)
+#number of rides in a year viz
+summary_df %>% 
+  ggplot(mapping = aes(x = membership_type, y = number_of_rides, color = membership_type, fill = membership_type)) +
+  geom_col(position = "dodge") + 
+  scale_y_continuous(labels = comma)
 
-View(summary_df)
   
 ```
 
+
+
 ```{r}
-# Viz for number of rides taken every day of the week
+#number of rides by month Viz
 summary_df %>% 
-  ggplot(aes(x = weekday, y = number_of_rides, color = member_casual, fill = member_casual)) +
-  geom_col(position =  "dodge") + scale_y_continuous(labels = comma)
-
+  ggplot(mapping = aes(x = month, y = number_of_rides, color = membership_type, fill = membership_type)) +
+  geom_col(position =  "dodge") + scale_y_continuous(labels = comma)+ 
+  #coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5)) + facet_grid(~membership_type)
 ```
 
+
+
 ```{r}
-# Viz of average duration in minutes of rides spent every day of the week
+# Number of rides by weekdays Viz
 summary_df %>% 
-  ggplot(aes(x = weekday, y = average_duration_min, fill = member_casual)) +
-  geom_col(position = "dodge") + scale_y_continuous(labels = comma)
+  ggplot(aes(x = weekday, y = number_of_rides, color = membership_type, fill = membership_type)) +
+  geom_col(position =  "dodge") + scale_y_continuous(labels = comma) + facet_grid(~membership_type) + 
+ # coord_flip() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5))
+
 ```
 
-```{r}
-# Summary table grouping by month and member-casual
-summary2_df <- trimmed_df %>% 
-  mutate(month = month(started_at, abbr = FALSE ,label = TRUE)) %>%
-  mutate(year = year(started_at)) %>% 
-  group_by(member_casual, year, month) %>% 
-  summarise(number_of_rides = n(),
-            average_duration_sec = mean(ride_duration_seconds),
-            average_duration_min = mean(ride_duration_min),
-            average_distance_miles = mean(ride_distance_miles)) %>% 
-  arrange(member_casual,year,month)
 
-View(summary2_df)
+```{r}
+#Ride in average minutes by year viz
+summary_df %>% 
+  ggplot(mapping = aes(x = membership_type, y = average_minutes, fill = membership_type)) +
+  geom_col(position =  "dodge") + scale_y_continuous(labels = comma) + 
+  theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=0.5))
 ```
 
+
 ```{r}
-# Viz of number of ride spent every month
-summary2_df %>% 
-  ggplot(aes(x = month, y = number_of_rides, fill = member_casual)) +
-  geom_col(position = "dodge") + scale_y_continuous(labels = comma) + 
+# Ride in average minutes by month viz
+summary_df %>% 
+  ggplot(mapping = aes(x = month, y = average_minutes, fill = membership_type)) +
+  geom_col(position = "dodge") + scale_y_continuous(labels = comma) + facet_grid(~membership_type) +
   theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5))
 ```
 
+
 ```{r}
-# Viz of average minutes of ride spent every month
-summary2_df %>% 
-  ggplot(aes(x = month, y = average_duration_min, fill = member_casual)) +
-  geom_col(position = "dodge") + scale_y_continuous(labels = comma) +
+# Ride in average minutes by weekday viz
+
+summary_df %>% 
+  ggplot(mapping = aes(x = weekday, y = average_minutes, fill = membership_type)) +
+  geom_col(position = "dodge") + scale_y_continuous(labels = comma) + facet_grid(~membership_type) +
   theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5))
 ```
 
-```{r}
-# Creating Summary table, grouping the bike_type and member_casual
-summary3_df <- trimmed_df %>% 
-  mutate(month = month(started_at, abbr = FALSE ,label = TRUE)) %>% 
-  group_by(member_casual, month, bike_type) %>% 
-  summarise(number_of_rides = n(),
-            average_duration_sec = mean(ride_duration_seconds),
-            average_duration_min = mean(ride_duration_min),
-            average_distance_miles = mean(ride_distance_miles)) %>% 
-  arrange(member_casual,bike_type)
 
-View(summary3_df)
-```
 
-```{r}
-summary3_df %>% 
-  ggplot(aes(x = month, y = number_of_rides, fill = bike_type)) +
-  geom_col(position = "dodge") + scale_y_continuous(labels = comma) + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5)) + facet_grid(~ member_casual)
-
-```
-
-```{r}
-summary3_df %>% 
-  ggplot(aes(x = month, y = average_duration_min, fill = bike_type)) +
-  geom_col(position = "dodge") + scale_y_continuous(labels = comma) + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5)) + facet_grid(~ member_casual)
-```
-
-```{r}
-summary3_df %>% 
-  ggplot(aes(x = average_duration_min, y = month, fill = stat(x))) +
-  geom_density_ridges_gradient(scale = 3, rel_min_height = 0.01) +
-  scale_fill_viridis_c(name = "test", option = "D") + scale_x_continuous(labels = comma)+ facet_grid(~member_casual)
-```
-
-```{r}
-summary4_df <- trimmed_df %>% 
-  mutate(weekday = wday(started_at, abbr = FALSE ,label = TRUE)) %>% 
-  group_by(member_casual, weekday, bike_type) %>% 
-  summarise(number_of_rides = n(),
-            average_duration_sec = mean(ride_duration_seconds),
-            average_duration_min = mean(ride_duration_min),
-            average_distance_miles = mean(ride_distance_miles)) %>% 
-  arrange(member_casual,bike_type)
-
-View(summary3_df)
-```
