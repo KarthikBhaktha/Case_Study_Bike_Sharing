@@ -160,21 +160,21 @@ summary_df %>%
   theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=0.5))
 ```
 
+
 ```{r}
-#testing geom_line
-test_df <- trimmed_df %>% 
-  mutate(month = lubridate::month(started_at, abbr= FALSE, label= TRUE)) %>% 
-  mutate(weekday = lubridate::wday(started_at, abbr = FALSE, label = TRUE)) %>% 
+summary_bike_type <- trimmed_df %>% 
+  group_by(membership_type,bike_type) %>% 
+  summarise(mean_duration = mean(duration_minutes), total_rides = n())
   
-  
-  
-View(test_df)
+View(summary_bike_type)
 ```
 
+Creating a summary table with the dataset that contains station names.
 
 
 
 ```{r}
 write.csv(summary_df,"/Users/locco/Desktop/Google_Analytics_Course/Case_Studies/Bike_share_Data/summary.csv")
+write.csv(summary_bike_type, "/Users/locco/Desktop/Google_Analytics_Course/Case_Studies/Bike_share_Data/summary_bike_type.csv")
 ```
 
