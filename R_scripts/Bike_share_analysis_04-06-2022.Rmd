@@ -90,10 +90,12 @@ Lets answer the question as they appear in the list.
 summary_df <- trimmed_df %>% 
   mutate(month = lubridate::month(started_at, abbr= FALSE, label= TRUE)) %>% 
   mutate(weekday = lubridate::wday(started_at, abbr = FALSE, label = TRUE)) %>% 
-  group_by(membership_type, month, weekday) %>% 
+  group_by(membership_type, month, weekday, bike_type) %>% 
   summarise(number_of_rides = n(),
+            total_minutes = sum(duration_minutes),
+            total_distance = sum(distance_miles),
             average_minutes = mean(duration_minutes),
-            average_distance = mean(distance_miles))
+            bike_type)
   
 View(summary_df)
 ```
@@ -171,10 +173,53 @@ View(summary_bike_type)
 
 Creating a summary table with the dataset that contains station names.
 
+```{r}
+total_minutes <- trimmed_df %>% 
+  group_by(membership_type) %>% 
+  summarise(total_time = sum(duration_minutes),
+            days = (sum(duration_minutes)/60/24),
+            years = ((sum(duration_minutes)/60/24)/365))
+
+
+View(total_minutes)
+```
+
+```{r}
+total_time <- trimmed_df %>% 
+  summarise(time = sum(duration_minutes))
+
+View(total_time)
+```
 
 
 ```{r}
-write.csv(summary_df,"/Users/locco/Desktop/Google_Analytics_Course/Case_Studies/Bike_share_Data/summary.csv")
-write.csv(summary_bike_type, "/Users/locco/Desktop/Google_Analytics_Course/Case_Studies/Bike_share_Data/summary_bike_type.csv")
+# trimming the dataset
+trimmed_df_2 <- trimmed_df %>% 
+  group_by(membership_type) %>% 
+  select( membership_type, duration_minutes) %>% 
+  summarise(sum_min = sum(duration_minutes) , avg_min = mean(duration_minutes))
+
+View(trimmed_df_2)
+  
+```
+
+```{r}
+# poulation table for bike types used
+data <- master_data %>% 
+  ggplot(data, aes(x = age, fill = gender,
+                 y = ifelse(test = gender == "M",
+                            yes = -population, no = population))) + 
+  geom_bar(stat = "identity") +
+  scale_y_continuous(labels = abs, limits = max(data$population) * c(-1,1)) +
+  coord_flip()
+
+
+```
+
+```{r}
+#write.csv(summary_df,"/Users/locco/Desktop/Google_Analytics_Course/Case_Studies/Bike_share_Data/summary.csv")
+#write.csv(summary_bike_type, "/Users/locco/Desktop/Google_Analytics_Course/Case_Studies/Bike_share_Data/summary_bike_type.csv")
+#write.csv(summary_df,"/Users/locco/Desktop/Google_Analytics_Course/Case_Studies/Bike_share_Data/summary2.csv")
+
 ```
 
