@@ -2,7 +2,8 @@
 
 ## **Case Sudy- Cyclystics Bike Sharing**.
 
-<img src='/Users/locco/Desktop/Google_Analytics_Course/Case_Studies/Case_Study_Bike_Sharing/python_script/cyclistic.png' width=”5” height=”5”>
+
+<img width="164" alt="cyclistic" src="https://user-images.githubusercontent.com/34380470/169942268-b56a7348-6398-41e5-bed8-bda9cbb2ad8e.png">
 
 
 
