@@ -21,7 +21,7 @@ Therefore, they want to target current casual members to convert them into annua
  
 ### **Scope of Analysis**:
 
-How annual members and casual members used cyclistics differently in 2021?
+How annual members and casual members used Cyclistics differently in 2021?
 
 ### **About the data**:
 **Source**:
