@@ -1,6 +1,6 @@
-# Capstone Project - Part of Google Data Analytics Professional Certificate on Coursera.
+# Google Data Analytics Professional Certificate - Capstone Project.
 
-## **Case Sudy- Cyclystics Bike Sharing**.
+## **Case Study - Cyclystics Bike Sharing**.
 
 
 <img width="164" alt="cyclistic" src="https://user-images.githubusercontent.com/34380470/169942268-b56a7348-6398-41e5-bed8-bda9cbb2ad8e.png">
